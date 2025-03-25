@@ -1,6 +1,7 @@
 package tasks.adts
-import u03.extensionmethods.Optionals.*
+
 import u03.extensionmethods.Sequences.*
+import scala.annotation.tailrec
 
 /*  Exercise 2: 
  *  Implement the below trait, and write a meaningful test.
@@ -111,21 +112,38 @@ object SchoolModel:
        */
       def hasCourse(name: String): Boolean
   object BasicSchoolModule extends SchoolModule:
-    override type School = Nothing
-    override type Teacher = Nothing
-    override type Course = Nothing
+    import Sequence.*
 
-    def teacher(name: String): Teacher = ???
-    def course(name: String): Course = ???
-    def emptySchool: School = ???
+    override type School = Sequence[(Teacher, Course)]
+    override type Teacher = String
+    override type Course = String
+
+    def teacher(name: String): Teacher = name
+    def course(name: String): Course = name
+    def emptySchool: School = Sequence.nil()
 
     extension (school: School)
-      def courses: Sequence[String] = ???
-      def teachers: Sequence[String] = ???
-      def setTeacherToCourse(teacher: Teacher, course: Course): School = ???
-      def coursesOfATeacher(teacher: Teacher): Sequence[Course] = ???
-      def hasTeacher(name: String): Boolean = ???
-      def hasCourse(name: String): Boolean = ???
+      def courses: Sequence[String] = school match
+        case Cons((t, c), tail) => cons(c, tail.courses)
+        case _ => nil()
+      def teachers: Sequence[String] = school match
+        case Cons((t, c), tail) => cons(t, tail.courses)
+        case _ => nil()
+      def setTeacherToCourse(teacher: Teacher, course: Course): School = school.concat(cons((teacher, course), nil()))
+      def coursesOfATeacher(teacher: Teacher): Sequence[Course] = school match
+        case Cons((t, c), tail) if t == teacher => cons(c, tail.coursesOfATeacher(t))
+        case Cons((t, c), tail) => tail.coursesOfATeacher(teacher)
+        case _ => nil()
+      @tailrec
+      def hasTeacher(name: String): Boolean = school match
+        case Cons((t, _), _) if t == name => true
+        case Cons(_, tail) => tail.hasTeacher(name)
+        case _ => false
+      @tailrec
+      def hasCourse(name: String): Boolean = school match
+        case Cons((_, c), _) if c == name => true
+        case Cons(_, tail) => tail.hasCourse(name)
+        case _ => false
 @main def examples(): Unit =
   import SchoolModel.BasicSchoolModule.*
   val school = emptySchool
